@@ -122,7 +122,10 @@ do_sample(const char *file, int line)
         sample_last = e->dest;
     }
 
-    sample_tv_last = tv;
+    if (gettimeofday(&sample_tv_last, NULL) < 0) {
+        perror("do_sample: gettimeofday");
+        exit(1);
+    }
 }
 
 static char
