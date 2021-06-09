@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <inttypes.h>
 
 #include <sys/time.h>
 
@@ -189,8 +190,8 @@ print_graph_json(FILE *f, const struct graph *graph)
             struct edge *e = &v->edges[j];
 
             fprintf(f, "   {\n    \"dest\": %zu,\n", e->dest);
-            fprintf(f, "    \"total-usec\": %llu,\n", e->total_usec);
-            fprintf(f, "    \"count\": %llu\n   }%s\n",
+            fprintf(f, "    \"total-usec\": %" PRIu64 ",\n", e->total_usec);
+            fprintf(f, "    \"count\": %" PRIu64 "\n   }%s\n",
                    e->count, (j == v->sedges - 1) ? "" : ",");
         }
         fprintf(f, "  ]\n }%s\n", (i == graph->svs - 1) ? "" : ",");
