@@ -1,7 +1,7 @@
 OBJS = sampler.o
 HEADERS = sampler.h
 
-PROGRAMS = test_cyc
+PROGRAMS = test_cyc test_sub
 
 SAMPLEROBJS := $(addprefix libsampler/,$(OBJS))
 PROGRAMEXES := $(addprefix programs/,$(PROGRAMS))
