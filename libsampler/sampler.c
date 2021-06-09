@@ -174,28 +174,28 @@ print_json_string(FILE *f, const char *s)
     fputc('"', f);
 }
 
-__attribute__ ((destructor)) void
-print_graph()
+void
+print_graph_json(FILE *f, const struct graph *graph)
 {
-    printf("[\n");
-    for (size_t i = 0; i < sample_graph.svs; i++) {
-        struct vertex *v = &sample_graph.vs[i];
+    fprintf(f, "[\n");
+    for (size_t i = 0; i < graph->svs; i++) {
+        struct vertex *v = &graph->vs[i];
 
-        printf(" {\n  \"file\": ");
-        print_json_string(stdout, v->file);
-        printf(",\n  \"line\": %d,\n", v->line);
-        printf("  \"edges\": [\n");
+        fprintf(f, " {\n  \"file\": ");
+        print_json_string(f, v->file);
+        fprintf(f, ",\n  \"line\": %d,\n", v->line);
+        fprintf(f, "  \"edges\": [\n");
         for (size_t j = 0; j < v->sedges; j++) {
             struct edge *e = &v->edges[j];
 
-            printf("   {\n    \"dest\": %zu,\n", e->dest);
-            printf("    \"total-usec\": %llu,\n", e->total_usec);
-            printf("    \"count\": %llu\n   }%s\n",
+            fprintf(f, "   {\n    \"dest\": %zu,\n", e->dest);
+            fprintf(f, "    \"total-usec\": %llu,\n", e->total_usec);
+            fprintf(f, "    \"count\": %llu\n   }%s\n",
                    e->count, (j == v->sedges - 1) ? "" : ",");
         }
-        printf("  ]\n }%s\n", (i == sample_graph.svs - 1) ? "" : ",");
+        fprintf(f, "  ]\n }%s\n", (i == graph->svs - 1) ? "" : ",");
     }
-    printf("]\n");
+    fprintf(f, "]\n");
 
     /*
      * [
@@ -212,4 +212,10 @@ print_graph()
      *  }, ...
      * ]
      */
+}
+
+__attribute__ ((destructor)) void
+print_graph()
+{
+    print_graph_json(stdout, &sample_graph);
 }
