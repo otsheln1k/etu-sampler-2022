@@ -5,9 +5,9 @@
 extern "C" {
 #endif
 
-#define SAMPLE do_sample(__FILE__, __LINE__)
+#define SAMPLE do_sample(__FILE__, __LINE__, __func__)
 
-void do_sample(const char *file, int line);
+void do_sample(const char *file, int line, const char *func);
 
 #ifdef __cplusplus
 }

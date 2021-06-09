@@ -19,6 +19,8 @@ struct vertex {
     const char *file;
     int line;
 
+    const char *func;
+
     struct edge *edges;
     size_t sedges;              /* size */
     size_t cedges;              /* capacity */
@@ -100,7 +102,7 @@ static size_t sample_last;
 static struct timeval sample_tv_last;
 
 void
-do_sample(const char *file, int line)
+do_sample(const char *file, int line, const char *func)
 {
     struct timeval tv;
     if (gettimeofday(&tv, NULL) < 0) {
@@ -122,6 +124,8 @@ do_sample(const char *file, int line)
 
         sample_last = e->dest;
     }
+
+    sample_graph.vs[sample_last].func = func;
 
     if (gettimeofday(&sample_tv_last, NULL) < 0) {
         perror("do_sample: gettimeofday");
@@ -185,7 +189,9 @@ print_graph_json(FILE *f, const struct graph *graph)
         fprintf(f, " {\n  \"file\": ");
         print_json_string(f, v->file);
         fprintf(f, ",\n  \"line\": %d,\n", v->line);
-        fprintf(f, "  \"edges\": [\n");
+        fprintf(f, "  \"func\": ");
+        print_json_string(f, v->func);
+        fprintf(f, ",\n  \"edges\": [\n");
         for (size_t j = 0; j < v->sedges; j++) {
             struct edge *e = &v->edges[j];
 
@@ -203,6 +209,7 @@ print_graph_json(FILE *f, const struct graph *graph)
      *  {
      *   ‘file’: (string),
      *   ‘line’: (integer),
+     *   ‘func’: (string),
      *   ‘edges’: [
      *    {
      *     ‘dest’: (integer index),

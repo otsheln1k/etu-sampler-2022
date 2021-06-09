@@ -1,8 +1,10 @@
+#!/usr/bin/env python3
+
 import sys
 import json
 
 def title(pt):
-    return f"{pt['file']}:{pt['line']}"
+    return f"{pt['file']}:{pt['line']} ({pt['func']})"
 
 j = json.load(sys.stdin)
 for pt in j:
