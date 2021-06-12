@@ -7,31 +7,6 @@
 
 #include "sampler.h"
 
-struct vertex;
-
-struct edge {
-    size_t dest;
-    uint64_t total_usec;
-    uint64_t count;
-};
-
-struct vertex {
-    const char *file;
-    int line;
-
-    const char *func;
-
-    struct edge *edges;
-    size_t sedges;              /* size */
-    size_t cedges;              /* capacity */
-};
-
-struct graph {
-    struct vertex *vs;
-    size_t svs;                 /* size */
-    size_t cvs;                 /* capacity */
-};
-
 static struct vertex *
 get_vertex(struct graph *g,
            const char *file, int line)
@@ -91,7 +66,7 @@ get_edge(struct graph *g, size_t src,
     return e;
 }
 
-static struct graph sample_graph = {
+struct graph sample_graph = {
     .vs = NULL,
     .svs = 0,
     .cvs = 0,
