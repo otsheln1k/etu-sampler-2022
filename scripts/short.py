@@ -14,4 +14,5 @@ for pt in j:
         t2 = title(p2)
         u = e['total-usec']
         c = e['count']
-        print(f"{t1} -> {t2}: {u} / {c} = {u/c}")
+        a = round(u /c, 3)
+        print(f"{t1} -> {t2}: {u} / {c} = {a}")

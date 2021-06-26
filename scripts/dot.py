@@ -9,7 +9,7 @@ def ptitle(pt):
 def etitle(e):
     t = e['total-usec']
     c = e['count']
-    a = t / c
+    a = round(t / c, 3)
     return f"{t}/{c} = {a}"
 
 def esc(s):
