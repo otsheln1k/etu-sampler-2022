@@ -17,7 +17,10 @@ progs: $(PROGRAMEXES)
 libsampler/libsampler.a: $(SAMPLEROBJS)
 	$(AR) rc $@ $^
 
-%.o: %.c $(HEADERFILES)
+libsampler/%.o: libsampler/%.c $(HEADERFILES)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+programs/%.o: programs/%.c libsampler/sampler.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(PROGRAMEXES): LDLIBS += -Llibsampler/ -lsampler
