@@ -1,3 +1,5 @@
+CFLAGS ?= -g -Wall -Wextra
+
 OBJS = sampler.o
 HEADERS = sampler.h
 
