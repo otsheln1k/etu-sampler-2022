@@ -4,8 +4,10 @@
 #define SIZE 10000
 #endif
 
-int main()
+int main(int argc, char **argv)
 {
+    sampler_init(&argc, argv);
+
     int i, tmp, dim[SIZE];
 
     SAMPLE;

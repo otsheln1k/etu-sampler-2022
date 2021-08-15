@@ -9,41 +9,28 @@
 extern "C" {
 #endif
 
-#define SAMPLE do_sample(__FILE__, __LINE__, __func__)
 
-void do_sample(const char *file, int line, const char *func);
+/* New sampler:
+ * 1. Measure end time, calculate time delta
+ * 2. Write prev pt, this pt, time delta
+ * 3. Measure start time, record this pt as prev pt
+ */
 
 
-struct vertex;
+#define SAMPLE sampler_checkpoint(__FILE__, __LINE__, __func__)
+#define CHECKPOINT SAMPLE
 
-struct edge {
-    size_t dest;
-    uint64_t total_usec;
-    uint64_t count;
-};
+void sampler_checkpoint(const char *file, int line, const char *func);
 
-struct vertex {
-    const char *file;
-    int line;
 
-    const char *func;
+/* Cmdline interface:
+ * - ‘-o file’
+ * - ‘-O fd’
+ * - ‘-- rest...’
+ */
 
-    struct edge *edges;
-    size_t sedges;              /* size */
-    size_t cedges;              /* capacity */
-};
 
-struct graph {
-    struct vertex *vs;
-    size_t svs;                 /* size */
-    size_t cvs;                 /* capacity */
-};
-
-extern struct graph sample_graph;
-
-void
-print_graph_json(FILE *f, const struct graph *graph);
-
+void sampler_init(int *pargc, char **argv);
 
 #ifdef __cplusplus
 }

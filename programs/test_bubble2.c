@@ -61,6 +61,8 @@ void bubble_2(float arr[], size_t n)
 
 int main(int argc, char **argv)
 {
+    sampler_init(&argc, argv);
+
     size_t max = 100;
     unsigned int seed = 123654;
     if (argc >= 2) {

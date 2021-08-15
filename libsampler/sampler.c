@@ -2,114 +2,20 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <inttypes.h>
+#include <string.h>
 
 #include <sys/time.h>
 
 #include "sampler.h"
 
-static struct vertex *
-get_vertex(struct graph *g,
-           const char *file, int line)
-{
-    for (size_t i = 0; i < g->svs; i++) {
-        struct vertex *v = &g->vs[i];
-        if (v->file == file     /* both string literals, so just == */
-            && v->line == line) {
-            return v;
-        }
-    }
-
-    if (g->svs == g->cvs) {
-        g->cvs = (g->cvs + 1) * 2;
-        g->vs = realloc(g->vs, sizeof(*g->vs) * g->cvs);
-    }
-    struct vertex *v = &g->vs[g->svs++];
-    *v = (struct vertex) {
-        .file = file,
-        .line = line,
-        .edges = NULL,
-        .sedges = 0,
-        .cedges = 0,
-    };
-    return v;
-}
-
-static struct edge *
-get_edge(struct graph *g, size_t src,
-         const char *file, int line)
-{
-    struct vertex *v = &g->vs[src];
-
-    for (size_t i = 0; i < v->sedges; i++) {
-        struct edge *e = &v->edges[i];
-        struct vertex *d = &g->vs[e->dest];
-        if (d->file == file     /* see get_vertex */
-            && d->line == line) {
-            return e;
-        }
-    }
-
-    size_t dest = get_vertex(g, file, line) - g->vs;
-
-    v = &g->vs[src];            /* repeat in case of realloc */
-
-    if (v->sedges == v->cedges) {
-        v->cedges = (v->cedges + 1) * 2;
-        v->edges = realloc(v->edges, sizeof(*v->edges) * v->cedges);
-    }
-    struct edge *e = &v->edges[v->sedges++];
-    *e = (struct edge) {
-        .dest = dest,
-        .total_usec = 0,
-        .count = 0,
-    };
-    return e;
-}
-
-struct graph sample_graph = {
-    .vs = NULL,
-    .svs = 0,
-    .cvs = 0,
+struct sampler_point {
+    const char *file;
+    int line;
+    const char *func;
 };
 
-static size_t sample_last;
-
-static struct timeval sample_tv_last;
-
-void
-do_sample(const char *file, int line, const char *func)
-{
-    struct timeval tv;
-    if (gettimeofday(&tv, NULL) < 0) {
-        perror("do_sample: gettimeofday");
-        exit(1);
-    }
-
-    if (sample_graph.vs == NULL) {
-        struct vertex *v = get_vertex(&sample_graph, file, line);
-        sample_last = v - sample_graph.vs;
-
-    } else {
-        struct edge *e = get_edge(&sample_graph,
-                                  sample_last, file, line);
-        uint64_t dusec = (tv.tv_sec - sample_tv_last.tv_sec) * 1000000
-            + (tv.tv_usec - sample_tv_last.tv_usec);
-        e->total_usec += dusec;
-        e->count++;
-
-        sample_last = e->dest;
-    }
-
-    sample_graph.vs[sample_last].func = func;
-
-    if (gettimeofday(&sample_tv_last, NULL) < 0) {
-        perror("do_sample: gettimeofday");
-        exit(1);
-    }
-}
-
 static char
-json_ctl_char(char c)
+json_control_char(char c)
 {
     switch (c) {
     case '\b': return 'b';
@@ -122,7 +28,7 @@ json_ctl_char(char c)
 }
 
 static void
-print_json_char(FILE *f, char c)
+json_print_char(FILE *f, char c)
 {
     if (c == '"' || c == '\\') {
         fputc('\\', f);
@@ -135,7 +41,7 @@ print_json_char(FILE *f, char c)
         return;
     }
 
-    char cc = json_ctl_char(c);
+    char cc = json_control_char(c);
     if (cc >= 0) {
         fputc('\\', f);
         fputc(cc, f);
@@ -145,60 +51,117 @@ print_json_char(FILE *f, char c)
 }
 
 static void
-print_json_string(FILE *f, const char *s)
+json_print_string(FILE *f, const char *s)
 {
     fputc('"', f);
     for (const char *i = s; *i; i++) {
-        print_json_char(f, *i);
+        json_print_char(f, *i);
     }
     fputc('"', f);
 }
 
-void
-print_graph_json(FILE *f, const struct graph *graph)
+static void
+json_print_point(FILE *f, const struct sampler_point *pt)
 {
-    fprintf(f, "[\n");
-    for (size_t i = 0; i < graph->svs; i++) {
-        struct vertex *v = &graph->vs[i];
-
-        fprintf(f, " {\n  \"file\": ");
-        print_json_string(f, v->file);
-        fprintf(f, ",\n  \"line\": %d,\n", v->line);
-        fprintf(f, "  \"func\": ");
-        print_json_string(f, v->func);
-        fprintf(f, ",\n  \"edges\": [\n");
-        for (size_t j = 0; j < v->sedges; j++) {
-            struct edge *e = &v->edges[j];
-
-            fprintf(f, "   {\n    \"dest\": %zu,\n", e->dest);
-            fprintf(f, "    \"total-usec\": %" PRIu64 ",\n", e->total_usec);
-            fprintf(f, "    \"count\": %" PRIu64 "\n   }%s\n",
-                   e->count, (j == v->sedges - 1) ? "" : ",");
-        }
-        fprintf(f, "  ]\n }%s\n", (i == graph->svs - 1) ? "" : ",");
-    }
-    fprintf(f, "]\n");
-
-    /*
-     * [
-     *  {
-     *   ‘file’: (string),
-     *   ‘line’: (integer),
-     *   ‘func’: (string),
-     *   ‘edges’: [
-     *    {
-     *     ‘dest’: (integer index),
-     *     ‘total-usec’: (large integer),
-     *     ‘count’: (large integer)
-     *    }, ...
-     *   ]
-     *  }, ...
-     * ]
-     */
+    fputs("{\"file\":", f);
+    json_print_string(f, pt->file);
+    fprintf(f, ",\"line\":%d,\"func\":", pt->line);
+    json_print_string(f, pt->func);
+    fputs("}", f);
 }
 
-__attribute__ ((destructor)) void
-print_graph()
+static void
+json_print_edge(FILE *f,
+                const struct sampler_point *prev,
+                const struct sampler_point *curr,
+                uint64_t dt)
 {
-    print_graph_json(stdout, &sample_graph);
+    fputs("{\"prev\":", f);
+    json_print_point(f, prev);
+    fputs(",\"curr\":", f);
+    json_print_point(f, curr);
+    fprintf(f, ",\"dt\":%" PRIu64 "}\n", dt);
+}
+
+static struct {
+    struct sampler_point pt;
+    struct timeval tv;
+} sampler_tv_last;
+
+static FILE *sampler_outfile;
+
+void
+sampler_checkpoint(const char *file, int line, const char *func)
+{
+    struct timeval tv;
+    if (gettimeofday(&tv, NULL) < 0) {
+        perror("sampler_checkpoint: gettimeofday");
+        exit(1);
+    }
+
+    struct sampler_point curr = {
+        .file = file,
+        .line = line,
+        .func = func,
+    };
+
+    if (sampler_tv_last.pt.file != NULL) {
+
+        uint64_t dt = (tv.tv_sec - sampler_tv_last.tv.tv_sec) * 1000000
+            + (tv.tv_usec - sampler_tv_last.tv.tv_usec);
+
+        json_print_edge(sampler_outfile, &sampler_tv_last.pt, &curr, dt);
+    }
+
+    sampler_tv_last.pt = curr;
+
+    if (gettimeofday(&sampler_tv_last.tv, NULL) < 0) {
+        perror("sampler_checkpoint: gettimeofday");
+        exit(1);
+    }
+}
+
+void
+sampler_init(int *pargc, char **argv)
+{
+    const char *filename = NULL;
+    int filedes = -1;
+
+    int i;
+    for (i = 1; i < *pargc; i++) {
+        const char *s = argv[i];
+        if (!strcmp(s, "-o")) {
+            filename = argv[++i];
+            filedes = -1;
+        } else if (!strcmp(s, "-O")) {
+            filename = NULL;
+            if (sscanf(argv[++i], "%d", &filedes) != 1) {
+                fprintf(stderr,
+                        "%s: -O: argument must be a number\n",
+                        argv[0]);
+                exit(2);
+            }
+        } else if (!strcmp(s, "--")) {
+            ++i;
+            break;
+        } else {
+            break;
+        }
+    }
+
+    if (i > 1) {
+        for (int j = i; j < *pargc; j++) {
+            argv[j - i + 1] = argv[j];
+        }
+        argv[*pargc - i + 1] = NULL;
+    }
+    *pargc -= i - 1;
+
+    if (filename != NULL) {
+        sampler_outfile = fopen(filename, "w");
+    } else if (filedes >= 0) {
+        sampler_outfile = fdopen(filedes, "w");
+    } else {
+        sampler_outfile = stdout;
+    }
 }

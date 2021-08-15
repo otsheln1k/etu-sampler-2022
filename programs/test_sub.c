@@ -23,8 +23,10 @@ void TestLoop(int nTimes)
     }
 }
 
-int main()
+int main(int argc, char **argv)
 {
+    sampler_init(&argc, argv);
+
     SAMPLE;
     TestLoop(SIZE / 10);
     SAMPLE;
