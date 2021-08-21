@@ -2,7 +2,7 @@
 
 import sys
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List
 
 @dataclass
@@ -15,7 +15,9 @@ class Checkpoint:
 class Edge:
     src: Checkpoint
     dst: Checkpoint
-    times: List[int]
+    times: List[int] = field(default_factory=list)
+    refs_start: List[int] = field(default_factory=list)
+    refs_end: List[int] = field(default_factory=list)
 
 runs = json.load(sys.stdin)
 if not runs:
@@ -24,8 +26,7 @@ if not runs:
 
 edges = [
     Edge(src=Checkpoint(**r['prev']),
-         dst=Checkpoint(**r['curr']),
-         times=[])
+         dst=Checkpoint(**r['curr']))
     for r in runs[0]
 ]
 
@@ -39,6 +40,8 @@ for i, run in enumerate(runs):
             print(f"Mismatch in run {i}", file=sys.stderr)
             break
         e.times.append(r['dt'])
+        e.refs_start.append(r['ref_start'])
+        e.refs_end.append(r['ref_end'])
 
 if badruns > 0:
     print(f'({badruns} bad runs)', file=sys.stderr)
@@ -49,6 +52,8 @@ json.dump([
         'prev': e.src.__dict__,
         'curr': e.dst.__dict__,
         'times': e.times,
+        'refs_start': e.refs_start,
+        'refs_end': e.refs_end,
     }
     for e in edges
 ], sys.stdout)

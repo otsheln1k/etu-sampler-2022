@@ -4,9 +4,13 @@
 #include <inttypes.h>
 #include <string.h>
 
-#include <sys/time.h>
+#include <time.h>
 
 #include "sampler.h"
+
+#ifndef CLOCK
+#define CLOCK CLOCK_THREAD_CPUTIME_ID
+#endif
 
 struct sampler_point {
     const char *file;
@@ -74,30 +78,49 @@ static void
 json_print_edge(FILE *f,
                 const struct sampler_point *prev,
                 const struct sampler_point *curr,
-                uint64_t dt)
+                uint64_t dt, uint64_t ref_start, uint64_t ref_end)
 {
     fputs("{\"prev\":", f);
     json_print_point(f, prev);
     fputs(",\"curr\":", f);
     json_print_point(f, curr);
-    fprintf(f, ",\"dt\":%" PRIu64 "}\n", dt);
+    fprintf(f, ",\"dt\":%" PRIu64, dt);
+    fprintf(f, ",\"ref_start\":%" PRIu64, ref_start);
+    fprintf(f, ",\"ref_end\":%" PRIu64 "}\n", ref_end);
 }
 
 static struct {
     struct sampler_point pt;
-    struct timeval tv;
-} sampler_tv_last;
+    struct timespec ts;
+    struct timespec ts_ref;
+} sampler_last;
 
 static FILE *sampler_outfile;
+
+static uint64_t
+ns_delta(const struct timespec *t1,
+         const struct timespec *t2)
+{
+    return (t2->tv_sec - t1->tv_sec) * 1000000000
+        + (t2->tv_nsec - t1->tv_nsec);
+}
+
+static void
+clock_gettime_or_die(struct timespec *ts)
+{
+    if (clock_gettime(CLOCK, ts) < 0) {
+        perror("clock_gettime");
+        exit(1);
+    }
+}
 
 void
 sampler_checkpoint(const char *file, int line, const char *func)
 {
-    struct timeval tv;
-    if (gettimeofday(&tv, NULL) < 0) {
-        perror("sampler_checkpoint: gettimeofday");
-        exit(1);
-    }
+    struct timespec ts_end, ts_ref;
+
+    clock_gettime_or_die(&ts_end);
+    clock_gettime_or_die(&ts_ref);
 
     struct sampler_point curr = {
         .file = file,
@@ -105,20 +128,22 @@ sampler_checkpoint(const char *file, int line, const char *func)
         .func = func,
     };
 
-    if (sampler_tv_last.pt.file != NULL) {
+    if (sampler_last.pt.file != NULL) {
 
-        uint64_t dt = (tv.tv_sec - sampler_tv_last.tv.tv_sec) * 1000000
-            + (tv.tv_usec - sampler_tv_last.tv.tv_usec);
+        uint64_t dt = ns_delta(&sampler_last.ts, &ts_end);
+        uint64_t ref_start
+            = ns_delta(&sampler_last.ts_ref, &sampler_last.ts);
+        uint64_t ref_end = ns_delta(&ts_end, &ts_ref);
 
-        json_print_edge(sampler_outfile, &sampler_tv_last.pt, &curr, dt);
+        json_print_edge(sampler_outfile,
+                        &sampler_last.pt, &curr,
+                        dt, ref_start, ref_end);
     }
 
-    sampler_tv_last.pt = curr;
+    sampler_last.pt = curr;
 
-    if (gettimeofday(&sampler_tv_last.tv, NULL) < 0) {
-        perror("sampler_checkpoint: gettimeofday");
-        exit(1);
-    }
+    clock_gettime_or_die(&sampler_last.ts_ref);
+    clock_gettime_or_die(&sampler_last.ts);
 }
 
 void
