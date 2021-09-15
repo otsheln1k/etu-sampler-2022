@@ -19,8 +19,8 @@ void bubble_1(float arr[], size_t n)
                 arr[j] = tmp;
                 SAMPLE;
             }
-            SAMPLE;       /* we either did nothing or passed an
-                                 * empty region */
+            SAMPLE;
+
         }
         SAMPLE;
     }

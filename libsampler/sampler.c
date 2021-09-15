@@ -8,10 +8,6 @@
 
 #include "sampler.h"
 
-#ifndef CLOCK
-#define CLOCK CLOCK_THREAD_CPUTIME_ID
-#endif
-
 struct sampler_point {
     const char *file;
     int line;
@@ -89,14 +85,6 @@ json_print_edge(FILE *f,
     fprintf(f, ",\"ref_end\":%" PRIu64 "}\n", ref_end);
 }
 
-static struct {
-    struct sampler_point pt;
-    struct timespec ts;
-    struct timespec ts_ref;
-} sampler_last;
-
-static FILE *sampler_outfile;
-
 static uint64_t
 ns_delta(const struct timespec *t1,
          const struct timespec *t2)
@@ -105,45 +93,45 @@ ns_delta(const struct timespec *t1,
         + (t2->tv_nsec - t1->tv_nsec);
 }
 
-static void
-clock_gettime_or_die(struct timespec *ts)
-{
-    if (clock_gettime(CLOCK, ts) < 0) {
-        perror("clock_gettime");
-        exit(1);
-    }
-}
+static struct sampler_point sampler_last;
+static FILE *sampler_outfile;
+struct sampler_times sampler_times;
 
 void
-sampler_checkpoint(const char *file, int line, const char *func)
+sampler_do_checkpoint(const char *file, int line, const char *func)
 {
-    struct timespec ts_end, ts_ref;
-
-    clock_gettime_or_die(&ts_end);
-    clock_gettime_or_die(&ts_ref);
-
     struct sampler_point curr = {
         .file = file,
         .line = line,
         .func = func,
     };
 
-    if (sampler_last.pt.file != NULL) {
-
-        uint64_t dt = ns_delta(&sampler_last.ts, &ts_end);
+    if (sampler_last.file != NULL) {
+        uint64_t dt
+            = ns_delta(&sampler_times.tss2, &sampler_times.tse1);
         uint64_t ref_start
-            = ns_delta(&sampler_last.ts_ref, &sampler_last.ts);
-        uint64_t ref_end = ns_delta(&ts_end, &ts_ref);
+            = ns_delta(&sampler_times.tss1, &sampler_times.tss2);
+        uint64_t ref_end
+            = ns_delta(&sampler_times.tse1, &sampler_times.tse2);
 
         json_print_edge(sampler_outfile,
-                        &sampler_last.pt, &curr,
+                        &sampler_last, &curr,
                         dt, ref_start, ref_end);
     }
 
-    sampler_last.pt = curr;
+    sampler_last = curr;
+}
 
-    clock_gettime_or_die(&sampler_last.ts_ref);
-    clock_gettime_or_die(&sampler_last.ts);
+void
+sampler_checkpoint(const char *file, int line, const char *func)
+{
+    clock_gettime(CLOCK, &sampler_times.tse1);
+    clock_gettime(CLOCK, &sampler_times.tse2);
+
+    sampler_do_checkpoint(file, line, func);
+
+    clock_gettime(CLOCK, &sampler_times.tss1);
+    clock_gettime(CLOCK, &sampler_times.tss2);
 }
 
 void
