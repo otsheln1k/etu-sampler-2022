@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import math
+
 def average(it):
     c = 0
     acc = 0
@@ -8,6 +10,14 @@ def average(it):
         c += 1
     if c == 0:
         return 0
+    return acc / c
+
+def disp(it, av):
+    c = 0
+    acc = 0
+    for i in it:
+        acc += (i - av)**2
+        c += 1
     return acc / c
 
 def median(it):
@@ -41,7 +51,14 @@ def handle_edge(e, winsize=3, separate=False):
             k: median_filter(e[k], winsize=winsize)
             for k in ('times', 'refs_start', 'refs_end')
         })
-    t = round(average(times))
+    ltimes = list(times)
+    at = average(ltimes)
+    dt = disp(ltimes, at)
+    r = 3 * math.sqrt(dt)
+    if (at - r) * (at + r) < 0:
+        t = 0
+    else:
+        t = round(at)
     return {
         'curr': e['curr'],
         'prev': e['prev'],
