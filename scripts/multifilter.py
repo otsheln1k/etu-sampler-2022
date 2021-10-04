@@ -40,7 +40,7 @@ def edge_times(e):
         dt = t - (rs + re) * 0.5
         yield dt
 
-def handle_edge(e, winsize=3, separate=False):
+def handle_edge(e, winsize=3, separate=False, threesigma=False):
     if winsize <= 0:
         times = edge_times(e)
     elif not separate:
@@ -51,14 +51,19 @@ def handle_edge(e, winsize=3, separate=False):
             k: median_filter(e[k], winsize=winsize)
             for k in ('times', 'refs_start', 'refs_end')
         })
-    ltimes = list(times)
-    at = average(ltimes)
-    dt = disp(ltimes, at)
-    r = 3 * math.sqrt(dt)
-    if (at - r) * (at + r) < 0:
-        t = 0
+
+    if threesigma:
+        ltimes = list(times)
+        at = average(ltimes)
+        dt = disp(ltimes, at)
+        r = 3 * math.sqrt(dt)
+        if (at - r) * (at + r) < 0:
+            t = 0
+        else:
+            t = round(at)
     else:
-        t = round(at)
+        t = round(average(times))
+
     return {
         'curr': e['curr'],
         'prev': e['prev'],
@@ -81,6 +86,12 @@ def parse_args(args):
         '-s', '--separate',
         action='store_true', default=False,
         help='use separate median filter'
+    )
+
+    parser.add_argument(
+        '-3', '--threesigma',
+        action='store_true', default=False,
+        help='use three sigma filter'
     )
 
     parser.add_argument(
@@ -108,7 +119,8 @@ if __name__ == "__main__":
         handle_edge(
             edge,
             winsize=args.winsize,
-            separate=args.separate
+            separate=args.separate,
+            threesigma=args.threesigma
         )
         for edge in j
     ]
