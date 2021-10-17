@@ -8,7 +8,7 @@ def ptitle(pt):
     return f"{pt['file']}:{pt['line']} ({pt['func']})"
 
 def etitle(t, c):
-    return f"{t}/{c}"
+    return f"{t} / {c}"
 
 def esc(s):
     es = s.replace('\\', '\\\\').replace('"', '\\"')
