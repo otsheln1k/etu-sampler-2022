@@ -39,6 +39,30 @@ def place_index(graph, p):
             return i
     raise ValueError(f'{p!r} not in graph')
 
+def avg(it):
+    n = 0
+    acc = 0
+    for i in it:
+        n += 1
+        acc = acc + i
+    return acc / n
+
+def variance(l, av):
+    n = len(l)
+    return sum((x - av)**2 for x in l) / n
+
+def mkedge(times):
+    a = avg(times)
+    v = variance(times, a)
+    return {
+        'total-usec': sum(times),
+        'count': len(times),
+        'attrs': {
+            'avg': a,
+            'var': v,
+        },
+    }
+
 def graph_to_dict(graph):
     return [
         {
@@ -46,8 +70,7 @@ def graph_to_dict(graph):
             'edges': [
                 {
                     'dest': place_index(graph, d),
-                    'total-usec': sum(times),
-                    'count': len(times),
+                    **mkedge(times),
                 }
                 for d, times in v.items()
             ]
