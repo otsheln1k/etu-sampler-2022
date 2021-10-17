@@ -78,7 +78,7 @@ def parse_args(args):
 
     parser.add_argument(
         '-w', '--winsize', metavar='N', type=int,
-        action='store', default=3,
+        action='store', default=0,
         help='window size for median filter (disable if nonpositive)'
     )
 
