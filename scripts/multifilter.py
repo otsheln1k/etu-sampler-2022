@@ -2,7 +2,7 @@
 
 import math
 
-def average(it):
+def avg(it):
     c = 0
     acc = 0
     for i in it:
@@ -12,12 +12,14 @@ def average(it):
         return 0
     return acc / c
 
-def disp(it, av):
+def var(it, av):
     c = 0
     acc = 0
     for i in it:
         acc += (i - av)**2
         c += 1
+    if c == 0:
+        return 0
     return acc / c
 
 def median(it):
@@ -52,22 +54,27 @@ def handle_edge(e, winsize=3, separate=False, threesigma=False):
             for k in ('times', 'refs_start', 'refs_end')
         })
 
+    ltimes = list(times)
     if threesigma:
-        ltimes = list(times)
-        at = average(ltimes)
-        dt = disp(ltimes, at)
-        r = 3 * math.sqrt(dt)
+        at = avg(ltimes)
+        v = var(ltimes, at)
+        r = 3 * math.sqrt(v)
         if (at - r) * (at + r) < 0:
             t = 0
         else:
             t = round(at)
     else:
-        t = round(average(times))
+        at = avg(ltimes)
+        v = var(ltimes, at)
+        t = round(at)
 
     return {
         'curr': e['curr'],
         'prev': e['prev'],
         'dt': t,
+        'var': v,
+        'max': max(ltimes),
+        'min': min(ltimes),
     }
 
 def parse_args(args):

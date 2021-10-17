@@ -17,11 +17,11 @@ def make_graph(edges):
     for e in edges:
         src = place_to_tuple(e['prev'])
         dst = place_to_tuple(e['curr'])
-        dt = e['dt']
+        r = tuple(e[k] for k in ('dt', 'var', 'max', 'min'))
         ed = findplace(src)
         findplace(dst)
-        el = ed.setdefault(dst, [])
-        el.append(dt)
+        rs = ed.setdefault(dst, [])
+        rs.append(r)
     return graph
 
 def tuple_to_place(t):
@@ -51,7 +51,11 @@ def variance(l, av):
     n = len(l)
     return sum((x - av)**2 for x in l) / n
 
-def mkedge(times):
+def mkedge(recs):
+    times = [r[0] for r in recs]
+    variances = [r[1] for r in recs]
+    tmax = max(r[2] for r in recs)
+    tmin = min(r[3] for r in recs)
     a = avg(times)
     v = variance(times, a)
     return {
@@ -60,6 +64,9 @@ def mkedge(times):
         'attrs': {
             'avg': a,
             'var': v,
+            'var/tot': sum(variances),
+            'max': tmax,
+            'min': tmin,
         },
     }
 
@@ -70,9 +77,9 @@ def graph_to_dict(graph):
             'edges': [
                 {
                     'dest': place_index(graph, d),
-                    **mkedge(times),
+                    **mkedge(rs),
                 }
-                for d, times in v.items()
+                for d, rs in v.items()
             ]
         }
         for k, v in graph
