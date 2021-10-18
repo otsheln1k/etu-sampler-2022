@@ -3,7 +3,8 @@ CFLAGS ?= -g -Wall -Wextra
 OBJS = sampler.o
 HEADERS = sampler.h
 
-PROGRAMS = test_cyc test_sub test_bubble test_bubble2 empty
+PROGRAMS = test_cyc test_sub test_bubble test_bubble2 empty \
+    inttrapez-1full inttrapez-2full inttrapez-1part inttrapez-2part
 
 SAMPLEROBJS := $(addprefix libsampler/,$(OBJS))
 PROGRAMEXES := $(addprefix programs/,$(PROGRAMS))
