@@ -4,6 +4,7 @@ import sys
 import json
 from dataclasses import dataclass, field
 from typing import List
+from itertools import takewhile
 
 @dataclass
 class Checkpoint:
@@ -19,29 +20,48 @@ class Edge:
     refs_start: List[int] = field(default_factory=list)
     refs_end: List[int] = field(default_factory=list)
 
-runs = json.load(sys.stdin)
-if not runs:
-    print('[]')
-    exit()
+def lines(f):
+    for l in f:
+        l = l.rstrip('\n')
+        if not l:
+            yield None
+        else:
+            yield json.loads(l)
+
+def takerun(ls):
+    return takewhile(lambda x: x is not None, ls)
+
+ls = lines(sys.stdin)
 
 edges = [
     Edge(src=Checkpoint(**r['prev']),
          dst=Checkpoint(**r['curr']))
-    for r in runs[0]
+    for r in takerun(ls)
 ]
 
 badruns = 0
-for i, run in enumerate(runs):
-    for e, r in zip(edges, run):
-        csrc = Checkpoint(**r['prev'])
-        cdst = Checkpoint(**r['curr'])
-        if csrc != e.src or cdst != e.dst:
-            badruns += 1
-            print(f"Mismatch in run {i}", file=sys.stderr)
-            break
-        e.times.append(r['dt'])
-        e.refs_start.append(r['ref_start'])
-        e.refs_end.append(r['ref_end'])
+i = 0
+ign = False
+for r in ls:
+    if r is None:
+        i = 0
+        ign = False
+        continue
+    idx, i = i, i+1
+    if ign:
+        continue
+
+    e = edges[idx]
+    csrc = Checkpoint(**r['prev'])
+    cdst = Checkpoint(**r['curr'])
+    if csrc != e.src or cdst != e.dst:
+        badruns += 1
+        print(f"Mismatch in run {idx}", file=sys.stderr)
+        ign = True
+        continue
+    e.times.append(r['dt'])
+    e.refs_start.append(r['ref_start'])
+    e.refs_end.append(r['ref_end'])
 
 if badruns > 0:
     print(f'({badruns} bad runs)', file=sys.stderr)

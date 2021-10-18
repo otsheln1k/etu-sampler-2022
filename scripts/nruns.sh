@@ -19,7 +19,6 @@ shift 3
 
 first="$(expr "$s" + 1)"
 
-echo '['
 seq "$n" | \
     while read i
     do
@@ -27,10 +26,7 @@ seq "$n" | \
         then
             "$program" -o /dev/null -- "$@" >/dev/null 2>&1
         else
-            [ "$i" -ne "$first" ] && echo ','
-            echo '['
-            "$program" -O 3 -- "$@" 3>&1 >/dev/null | sed '1!s/^/,/'
-            echo ']'
+            "$program" -O 3 -- "$@" 3>&1 >/dev/null
+            echo
         fi
     done
-echo ']'
