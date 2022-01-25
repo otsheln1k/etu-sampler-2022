@@ -11,7 +11,7 @@ PROGRAMEXES := $(addprefix programs/,$(PROGRAMS))
 PROGRAMOBJS := $(addsuffix .o,$(PROGRAMEXES))
 HEADERFILES := $(addprefix libsampler/,$(HEADERS))
 
-all: libsampler/libsampler.a progs
+all: libsampler/libsampler.a progs tools/repeat
 
 progs: $(PROGRAMEXES)
 
@@ -30,7 +30,10 @@ $(PROGRAMOBJS): CFLAGS += -Ilibsampler/
 programs/%: programs/%.o libsampler/libsampler.a
 	$(CC) $(LDFLAGS) -o $@ $< $(LDLIBS)
 
+tools/repeat: tools/repeat.c
+	$(CC) $(CFLAGS) -o $@ $<
+
 clean:
-	$(RM) libsampler/libsampler.a $(SAMPLEROBJS) $(PROGRAMEXES) $(PROGRAMOBJS)
+	$(RM) libsampler/libsampler.a $(SAMPLEROBJS) $(PROGRAMEXES) $(PROGRAMOBJS) tools/repeat
 
 .PHONY: all progs clean
