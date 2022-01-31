@@ -5,16 +5,11 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include <time.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
-/* New sampler:
- * 1. Measure end time, calculate time delta
- * 2. Write prev pt, this pt, time delta
- * 3. Measure start time, record this pt as prev pt
- */
 
 
 struct sampler_times {
@@ -23,10 +18,8 @@ struct sampler_times {
 
 extern struct sampler_times sampler_times;
 
-#include <time.h>
-
 #ifndef CLOCK
-#define CLOCK CLOCK_THREAD_CPUTIME_ID
+#define CLOCK CLOCK_MONOTONIC
 #endif
 
 
@@ -55,12 +48,12 @@ void sampler_checkpoint(
 void sampler_do_checkpoint(
     const char *file, int line, const char *func);
 
+
 /* Cmdline interface:
  * - ‘-o file’
  * - ‘-O fd’
  * - ‘-- rest...’
  */
-
 
 void sampler_init(int *pargc, char **argv);
 
