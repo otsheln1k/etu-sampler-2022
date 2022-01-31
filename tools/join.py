@@ -16,9 +16,9 @@ class Checkpoint:
 class Edge:
     src: Checkpoint
     dst: Checkpoint
-    times: List[int] = field(default_factory=list)
-    refs_start: List[int] = field(default_factory=list)
-    refs_end: List[int] = field(default_factory=list)
+    times: List[int]
+    refs_start: List[int]
+    refs_end: List[int]
 
 def lines(f):
     for l in f:
@@ -35,7 +35,10 @@ ls = lines(sys.stdin)
 
 edges = [
     Edge(src=Checkpoint(**r['prev']),
-         dst=Checkpoint(**r['curr']))
+         dst=Checkpoint(**r['curr']),
+         times=[r['dt']],
+         refs_start=[r['ref_start']],
+         refs_end=[r['ref_end']])
     for r in takerun(ls)
 ]
 
