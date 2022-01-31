@@ -13,3 +13,13 @@ target_compile_definitions(sampler
 target_link_libraries(sampler
   -lrt
 )
+
+set_property(TARGET sampler
+  PROPERTY PUBLIC_HEADER sampler.h
+)
+
+include(GNUInstallDirs)
+install(TARGETS sampler
+  PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/libsampler"
+  ARCHIVE
+)
