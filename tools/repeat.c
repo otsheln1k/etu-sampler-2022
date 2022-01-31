@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -37,11 +38,8 @@ main(int argc, char **argv)
         fd = 3;
     }
 
-    int dn = open("/dev/null", O_WRONLY);
-    if (dn < 0) {
-        perror("open(\"/dev/null\")");
-        return 1;
-    }
+    /* argv[3] (-o|-O) (/dev/null|3) -- argv[4] argv[5] ... argv[argc-1] NULL */
+    char **child_argv = malloc((argc + 1) * sizeof(*child_argv));
 
     int n_runs, n_skip;
     if (1 != sscanf(argv[1], "%d", &n_runs)
@@ -50,24 +48,25 @@ main(int argc, char **argv)
         return 2;
     }
 
-    /* TODO:
-     * 1. -O 3 | -o /dev/null
-     */
-
     for (int i = 0; i < n_runs; ++i) {
         int pid = fork();
         if (pid < 0) {
             perror("fork");
             return 1;
         } else if (0 == pid) {
-            if (i < n_skip) {
-                if (0 > dup2(dn, 3)) {
-                    perror("dup2");
-                    abort();
-                }
+            child_argv[0] = argv[3];
+            if (i >= n_skip) {
+                child_argv[1] = "-O";
+                child_argv[2] = "3";
+            } else {
+                child_argv[1] = "-o";
+                child_argv[2] = "/dev/null";
             }
+            child_argv[3] = "--";
+            memcpy(&child_argv[4], &argv[4], (argc - 4) * sizeof(*child_argv));
+            child_argv[argc] = NULL;
 
-            if (0 > execvp(argv[3], &argv[3])) {
+            if (0 > execvp(child_argv[0], &child_argv[0])) {
                 perror("exec");
                 return 1;
             }
@@ -93,13 +92,13 @@ main(int argc, char **argv)
             }
 
             if (i >= n_skip) {
-                lseek(fd, 0, SEEK_END);
-
                 char c = '\n';
                 write(fd, &c, 1);
             }
         }
     }
+
+    free(child_argv);
 
     close(fd);
 
