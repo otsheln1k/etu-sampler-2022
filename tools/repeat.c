@@ -51,8 +51,7 @@ main(int argc, char **argv)
     }
 
     /* TODO:
-     * 1. put ‘fd’ to child’s fd 3
-     * 2. ignore output ‘n_skip’ times (use “/dev/null”?)
+     * 1. -O 3 | -o /dev/null
      */
 
     for (int i = 0; i < n_runs; ++i) {
@@ -93,7 +92,7 @@ main(int argc, char **argv)
                 break;
             }
 
-            if (i < n_skip) {
+            if (i >= n_skip) {
                 lseek(fd, 0, SEEK_END);
 
                 char c = '\n';
