@@ -5,11 +5,11 @@ import json
 
 j = json.load(sys.stdin)
 print("|исх|прием|общее время|кол-во проходов|среднее время|")
-print("|-|-|-|-|-|")
+print("|-:|-:|-:|-:|-:|")
 for pt in j:
     for e in pt['edges']:
         p2 = j[e['dest']]
-        u = e['total-usec']
+        u = e['usec']
         c = e['count']
-        a = round(u /c, 3)
-        print(f"|{pt['line']}|{p2['line']}|{u}|{c}|{a}|")
+        a = u /c
+        print(f"|{pt['line']}|{p2['line']}|{u:.3f}|{c}|{a:.3f}|")
