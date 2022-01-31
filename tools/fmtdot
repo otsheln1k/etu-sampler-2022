@@ -25,16 +25,17 @@ def wrgraph(nodelabels, edges,
     for i, txt in enumerate(nodelabels):
         fprint(f'  {i} [label={esc(txt)}]')
     for i, j, e in edges:
-        t = e['total-usec']
-        c = e['count']
         attrs = {
             k: (round(v, 3) if isinstance(v, float) else v)
             for k, v in e.get('attrs', {}).items()
         }
-        l = htmllines([
-            etitle(t, c),
-            *(f'{k}={v!r}' for k, v in attrs.items())
-        ])
+        l = htmllines(
+            f'{k}={v!r}' for k, v in {
+                'T': round(e['usec'], 3),
+                'n': e['count'],
+                **attrs
+            }.items()
+        )
         fprint(f'  {i} -> {j} [<label>={l}]')
     fprint('}')
 
