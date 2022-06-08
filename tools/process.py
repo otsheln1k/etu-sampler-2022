@@ -55,13 +55,24 @@ def load_join_runs(f) -> List[RawEdge]:
     badruns = 0
     i = 0
     ign = False
+    irun = 2
     for r in ls:
         if r is None:
+            if i != len(edges):
+                print(f"Run {irun} too short", file=sys.stderr)
+                badruns += 1
             i = 0
             ign = False
             continue
         idx, i = i, i+1
+
         if ign:
+            continue
+
+        if idx >= len(edges):
+            badruns += 1
+            print(f"Run {irun} too long", file=sys.stderr)
+            ign = True
             continue
 
         e = edges[idx]
@@ -69,7 +80,7 @@ def load_join_runs(f) -> List[RawEdge]:
         cdst = Checkpoint(**r['curr'])
         if csrc != e.src or cdst != e.dst:
             badruns += 1
-            print(f"Mismatch in run {idx}", file=sys.stderr)
+            print(f"Mismatch in run {irun}, edge {idx}", file=sys.stderr)
             ign = True
             continue
         e.times.append(r['dt'])
