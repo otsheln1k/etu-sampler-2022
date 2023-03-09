@@ -6,3 +6,6 @@ target_link_libraries(test_cyc sampler)
 
 add_executable(test_sub test_sub.c)
 target_link_libraries(test_sub sampler)
+
+add_executable(simple simple.c)
+target_link_libraries(simple sampler)
