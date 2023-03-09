@@ -9,3 +9,6 @@ target_link_libraries(test_sub sampler)
 
 add_executable(simple simple.c)
 target_link_libraries(simple sampler)
+
+add_executable(bad bad.c)
+target_link_libraries(bad sampler)

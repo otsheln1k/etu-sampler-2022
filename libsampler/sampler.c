@@ -123,8 +123,19 @@ sampler_do_checkpoint(const char *file, int line, const char *func)
 }
 
 void
+sampler_abort(const char *msg)
+{
+    fprintf(stderr, "Error: %s\n", msg);
+    abort();
+}
+
+void
 sampler_checkpoint(const char *file, int line, const char *func)
 {
+    if (sampler_outfile == NULL) {
+        sampler_abort("sampler_init must be called before any checkpoints");
+    }
+
     clock_gettime(CLOCK, &sampler_times.tse1);
     clock_gettime(CLOCK, &sampler_times.tse2);
 
